@@ -45,29 +45,12 @@
                 <i class="fa fa-book text-primary text-xl"></i>
                 <h1 class="text-xl font-bold text-primary">我的阅读记录</h1>
             </div>
-            <div>
-                <button id="douban-login" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
-                    <i class="fa fa-douban mr-2"></i>登录豆瓣
-                </button>
-            </div>
         </div>
     </header>
 
     <main class="flex-1 container mx-auto px-4 py-8">
-        <!-- 欢迎区域 -->
-        <section id="welcome" class="mb-10 text-center py-12">
-            <div class="max-w-md mx-auto">
-                <i class="fa fa-book text-primary text-5xl mb-4"></i>
-                <h2 class="text-2xl font-bold mb-3">欢迎使用阅读记录</h2>
-                <p class="text-gray-600 mb-6">连接您的豆瓣账号，查看和管理您的阅读记录</p>
-                <button id="connect-douban" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors text-lg">
-                    <i class="fa fa-douban mr-2"></i>连接豆瓣账号
-                </button>
-            </div>
-        </section>
-
-        <!-- 书籍列表（初始隐藏） -->
-        <section id="books-section" class="hidden mb-12">
+        <!-- 书籍列表 -->
+        <section id="books-section" class="mb-12">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">我的书籍</h2>
                 <div class="flex space-x-3">
@@ -93,8 +76,8 @@
             </div>
         </section>
 
-        <!-- 统计卡片（初始隐藏） -->
-        <section id="stats-section" class="hidden mb-12">
+        <!-- 统计卡片 -->
+        <section id="stats-section" class="mb-12">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-white rounded-xl p-6 shadow-sm">
                     <div class="flex items-start justify-between">
@@ -142,24 +125,24 @@
     </footer>
 
     <script>
-        // 豆瓣登录按钮点击事件
-        document.getElementById('douban-login').addEventListener('click', function() {
-            // 实际项目中这里会跳转到豆瓣授权页面
-            alert('即将跳转到豆瓣授权页面（演示环境未实际连接）');
-            // 模拟登录成功，显示书籍数据
-            setTimeout(function() {
-                document.getElementById('welcome').classList.add('hidden');
-                document.getElementById('books-section').classList.remove('hidden');
-                document.getElementById('stats-section').classList.remove('hidden');
-                loadMockBooks();
-            }, 1000);
-        });
+        // 移除欢迎区域
+        const welcomeSection = document.getElementById('welcome');
+        if (welcomeSection) {
+            welcomeSection.remove();
+        }
 
-        document.getElementById('connect-douban').addEventListener('click', function() {
-            document.getElementById('douban-login').click();
-        });
+        // 移除登录按钮
+        const doubanLoginButton = document.getElementById('douban-login');
+        if (doubanLoginButton) {
+            doubanLoginButton.remove();
+        }
 
-        // 模拟从豆瓣获取书籍数据
+        const connectDoubanButton = document.getElementById('connect-douban');
+        if (connectDoubanButton) {
+            connectDoubanButton.remove();
+        }
+
+        // 直接加载模拟书籍数据
         function loadMockBooks() {
             // 隐藏空状态提示
             document.getElementById('empty-state').classList.add('hidden');
@@ -358,6 +341,11 @@
                 }
             });
         });
+
+        // 页面加载完成后直接加载数据
+        window.onload = function() {
+            loadMockBooks();
+        };
     </script>
 </body>
 </html>
