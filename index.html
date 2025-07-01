@@ -3,349 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的豆瓣阅读记录</title>
+    <title>我的旅游足迹地图</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        secondary: '#36D399',
-                        warning: '#FFAB00',
-                        danger: '#FF5252',
-                    },
-                    fontFamily: {
-                        inter: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-    
-    <style type="text/tailwindcss">
+    <script src="https://webapi.amap.com/maps?v=2.0&key=8d11d17ba1b1142ae3c63e4797a62c9e"></script>
+    <style>
         @layer utilities {
             .content-auto {
                 content-visibility: auto;
             }
-            .book-card {
-                @apply bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300;
+            .map-container {
+                height: 100vh;
             }
         }
     </style>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex flex-col">
-    <!-- 导航栏 -->
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <i class="fa fa-book text-primary text-xl"></i>
-                <h1 class="text-xl font-bold text-primary">我的阅读记录</h1>
+<body class="bg-gray-50 p-0 m-0">
+    <div class="relative w-full h-screen">
+        <div id="map-container" class="map-container"></div>
+        <div class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-4 z-10">
+            <h1 class="text-xl font-bold text-gray-800 mb-2">我的旅游足迹</h1>
+            <div class="flex items-center mb-1">
+                <span class="w-4 h-4 rounded-full bg-blue-500 mr-2"></span>
+                <span class="text-sm text-gray-700">已访问</span>
+            </div>
+            <div class="flex items-center">
+                <span class="w-4 h-4 rounded-full bg-gray-300/50 mr-2"></span>
+                <span class="text-sm text-gray-700">未访问</span>
             </div>
         </div>
-    </header>
-
-    <main class="flex-1 container mx-auto px-4 py-8">
-        <!-- 书籍列表 -->
-        <section id="books-section" class="mb-12">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">我的书籍</h2>
-                <div class="flex space-x-3">
-                    <div class="relative">
-                        <input type="text" id="search-books" placeholder="搜索书籍..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    </div>
-                    <select id="filter-status" class="bg-white border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <option value="all">全部</option>
-                        <option value="reading">在读</option>
-                        <option value="read">已读</option>
-                        <option value="wish">想读</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="books-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- 书籍卡片将通过JavaScript动态生成 -->
-                <div class="text-center py-12 col-span-full" id="empty-state">
-                    <i class="fa fa-inbox text-gray-300 text-5xl mb-4"></i>
-                    <p class="text-gray-500">暂无书籍数据，请等待加载...</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 统计卡片 -->
-        <section id="stats-section" class="mb-12">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white rounded-xl p-6 shadow-sm">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-gray-500 text-sm">当前阅读</p>
-                            <h3 class="text-xl font-bold mt-1" id="reading-count">0 本</h3>
-                        </div>
-                        <div class="bg-primary/10 p-3 rounded-lg">
-                            <i class="fa fa-book text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-xl p-6 shadow-sm">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-gray-500 text-sm">已读完</p>
-                            <h3 class="text-xl font-bold mt-1" id="read-count">0 本</h3>
-                        </div>
-                        <div class="bg-secondary/10 p-3 rounded-lg">
-                            <i class="fa fa-check-circle text-secondary"></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-xl p-6 shadow-sm">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="text-gray-500 text-sm">想读</p>
-                            <h3 class="text-xl font-bold mt-1" id="wish-count">0 本</h3>
-                        </div>
-                        <div class="bg-warning/10 p-3 rounded-lg">
-                            <i class="fa fa-star-o text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="bg-white border-t py-4">
-        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
-            <p>© 2025 我的阅读记录 | 与豆瓣读书关联</p>
-        </div>
-    </footer>
+        <div id="error-message" class="hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-20"></div>
+    </div>
 
     <script>
-        // 移除欢迎区域
-        const welcomeSection = document.getElementById('welcome');
-        if (welcomeSection) {
-            welcomeSection.remove();
-        }
-
-        // 移除登录按钮
-        const doubanLoginButton = document.getElementById('douban-login');
-        if (doubanLoginButton) {
-            doubanLoginButton.remove();
-        }
-
-        const connectDoubanButton = document.getElementById('connect-douban');
-        if (connectDoubanButton) {
-            connectDoubanButton.remove();
-        }
-
-        // 直接加载模拟书籍数据
-        function loadMockBooks() {
-            // 隐藏空状态提示
-            document.getElementById('empty-state').classList.add('hidden');
-            
-            // 模拟数据
-            const mockBooks = [
-                {
-                    id: 1,
-                    title: "人类简史：从动物到上帝",
-                    author: "尤瓦尔·赫拉利",
-                    status: "reading",
-                    progress: 65,
-                    rating: 4.8,
-                    category: "历史 / 科学",
-                    cover: "https://picsum.photos/seed/book1/400/500",
-                    startDate: "2025.05.15",
-                    endDate: ""
-                },
-                {
-                    id: 2,
-                    title: "影响力",
-                    author: "罗伯特·西奥迪尼",
-                    status: "read",
-                    progress: 100,
-                    rating: 4.7,
-                    category: "心理学",
-                    cover: "https://picsum.photos/seed/book2/400/500",
-                    startDate: "2025.03.12",
-                    endDate: "2025.04.05"
-                },
-                {
-                    id: 3,
-                    title: "思考，快与慢",
-                    author: "丹尼尔·卡尼曼",
-                    status: "read",
-                    progress: 100,
-                    rating: 4.9,
-                    category: "心理学",
-                    cover: "https://picsum.photos/seed/book3/400/500",
-                    startDate: "2025.01.05",
-                    endDate: "2025.02.20"
-                },
-                {
-                    id: 4,
-                    title: "三体",
-                    author: "刘慈欣",
-                    status: "wish",
-                    progress: 0,
-                    rating: 0,
-                    category: "科幻",
-                    cover: "https://picsum.photos/seed/book4/400/500",
-                    startDate: "",
-                    endDate: ""
-                }
-            ];
-            
-            // 更新统计数据
-            document.getElementById('reading-count').textContent = mockBooks.filter(b => b.status === 'reading').length + ' 本';
-            document.getElementById('read-count').textContent = mockBooks.filter(b => b.status === 'read').length + ' 本';
-            document.getElementById('wish-count').textContent = mockBooks.filter(b => b.status === 'wish').length + ' 本';
-            
-            // 渲染书籍卡片
-            const container = document.getElementById('books-container');
-            mockBooks.forEach(book => {
-                const card = createBookCard(book);
-                container.appendChild(card);
-            });
-        }
-
-        // 创建书籍卡片
-        function createBookCard(book) {
-            const card = document.createElement('div');
-            card.className = 'book-card';
-            
-            let statusBadge = '';
-            let progressHtml = '';
-            let actionButton = '';
-            
-            // 根据阅读状态设置不同的样式和内容
-            if (book.status === 'reading') {
-                statusBadge = `<div class="absolute top-3 right-3 bg-primary text-white text-xs font-bold px-2 py-1 rounded">在读</div>`;
-                progressHtml = `
-                    <div class="mb-4">
-                        <p class="text-xs text-gray-500 mb-1">阅读进度</p>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5">
-                            <div class="bg-primary h-1.5 rounded-full" style="width: ${book.progress}%"></div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1 text-right">${book.progress}% · 剩余约 ${Math.floor((100 - book.progress) * 0.2)} 小时</p>
-                    </div>
-                `;
-                actionButton = `
-                    <button class="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors">
-                        继续阅读
-                    </button>
-                `;
-            } else if (book.status === 'read') {
-                statusBadge = `<div class="absolute top-3 right-3 bg-secondary text-white text-xs font-bold px-2 py-1 rounded">已读完</div>`;
-                progressHtml = `
-                    <div class="mb-4">
-                        <p class="text-xs text-gray-500 mb-1">阅读时间</p>
-                        <p class="text-sm font-medium">${book.startDate} - ${book.endDate}</p>
-                    </div>
-                `;
-                actionButton = `
-                    <button class="flex-1 bg-white border border-gray-200 text-dark py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                        查看笔记
-                    </button>
-                `;
-            } else if (book.status === 'wish') {
-                statusBadge = `<div class="absolute top-3 right-3 bg-warning text-white text-xs font-bold px-2 py-1 rounded">想读</div>`;
-                progressHtml = `
-                    <div class="mb-4">
-                        <p class="text-xs text-gray-500 mb-1">加入想读</p>
-                        <p class="text-sm font-medium">2025.06.10</p>
-                    </div>
-                `;
-                actionButton = `
-                    <button class="flex-1 bg-white border border-primary text-primary py-2 rounded-lg hover:bg-primary/5 transition-colors">
-                        开始阅读
-                    </button>
-                `;
-            }
-            
-            // 评分显示
-            let ratingHtml = '';
-            if (book.rating > 0) {
-                ratingHtml = `
-                    <div class="flex items-center">
-                        <i class="fa fa-star text-warning text-sm"></i>
-                        <span class="ml-1 text-sm">${book.rating}</span>
-                    </div>
-                `;
-            }
-            
-            card.innerHTML = `
-                <div class="relative">
-                    <img src="${book.cover}" alt="${book.title}" class="w-full h-64 object-cover">
-                    ${statusBadge}
-                </div>
-                <div class="p-5">
-                    <h3 class="font-bold text-lg mb-1">${book.title}</h3>
-                    <p class="text-gray-500 text-sm mb-3">${book.author}</p>
-                    <div class="flex items-center justify-between mb-4">
-                        ${ratingHtml}
-                        <div class="text-xs text-gray-500">${book.category}</div>
-                    </div>
-                    ${progressHtml}
-                    <div class="flex space-x-2">
-                        ${actionButton}
-                        <button class="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                            <i class="fa fa-ellipsis-h text-gray-500"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        // 搜索功能
-        document.getElementById('search-books').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const cards = document.querySelectorAll('.book-card');
-            
-            cards.forEach(card => {
-                const title = card.querySelector('h3').textContent.toLowerCase();
-                const author = card.querySelector('p').textContent.toLowerCase();
-                
-                if (title.includes(searchTerm) || author.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-
-        // 筛选功能
-        document.getElementById('filter-status').addEventListener('change', function(e) {
-            const status = e.target.value;
-            const cards = document.querySelectorAll('.book-card');
-            
-            cards.forEach(card => {
-                const badge = card.querySelector('.absolute');
-                let cardStatus = '';
-                
-                if (badge) {
-                    if (badge.textContent.includes('在读')) cardStatus = 'reading';
-                    else if (badge.textContent.includes('已读完')) cardStatus = 'read';
-                    else if (badge.textContent.includes('想读')) cardStatus = 'wish';
-                }
-                
-                if (status === 'all' || status === cardStatus) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-
-        // 页面加载完成后直接加载数据
         window.onload = function() {
-            loadMockBooks();
+            try {
+                const map = new AMap.Map('map-container', {
+                    zoom: 4,
+                    center: [105.000, 38.000],
+                    viewMode: '2D'
+                });
+
+                const visitedProvinces = [
+                    { name: '江苏省', adcode: '320000' },
+                    { name: '浙江省', adcode: '330000' },
+                    { name: '上海市', adcode: '310000' },
+                    { name: '广东省', adcode: '440000' },
+                    { name: '广西壮族自治区', adcode: '450000' }
+                ];
+
+                AMap.plugin('AMap.DistrictLayer', function() {
+                    // 已访问省份 - 蓝色高亮
+                    const visitedStyle = {
+                        'fillColor': '#3B82F6', // 蓝色
+                        'fillOpacity': 0.9,
+                        'strokeColor': '#1D4ED8',
+                        'strokeWeight': 1.5
+                    };
+
+                    // 先加载已访问省份图层
+                    visitedProvinces.forEach(province => {
+                        const district = new AMap.DistrictLayer.Province({
+                            zIndex: 11, // 确保高亮图层在最上层
+                            adcode: [province.adcode],
+                            style: visitedStyle
+                        });
+                        district.setMap(map);
+                    });
+
+                    // 全国图层 - 半透明灰色，放在后面加载
+                    const nationLayer = new AMap.DistrictLayer.Country({
+                        zIndex: 10,
+                        adcode: '100000',
+                        depth: 1,
+                        style: {
+                            'fillColor': '#F0F2F5',
+                            'fillOpacity': 0.3, // 降低透明度，避免遮挡高亮
+                            'strokeColor': '#9CA3AF',
+                            'strokeWeight': 1
+                        }
+                    });
+                    nationLayer.setMap(map);
+
+                    // 交互效果
+                    map.on('mousemove', function(e) {
+                        map.plugin('AMap.DistrictSearch', function() {
+                            const search = new AMap.DistrictSearch({ level: 'province' });
+                            search.search(e.pixel, function(status, result) {
+                                if (status === 'complete' && result.districtList) {
+                                    const name = result.districtList[0].name;
+                                    const isVisited = visitedProvinces.some(p => p.name === name);
+                                    map.setDefaultCursor(isVisited ? 'pointer' : 'default');
+                                }
+                            });
+                        });
+                    });
+
+                    map.on('click', function(e) {
+                        map.plugin('AMap.DistrictSearch', function() {
+                            const search = new AMap.DistrictSearch({ level: 'province' });
+                            search.search(e.pixel, function(status, result) {
+                                if (status === 'complete' && result.districtList) {
+                                    const name = result.districtList[0].name;
+                                    if (visitedProvinces.some(p => p.name === name)) {
+                                        alert(`你已访问过 ${name}`);
+                                    }
+                                }
+                            });
+                        });
+                    });
+                });
+            } catch (error) {
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = `地图加载失败: ${error.message}`;
+                errorMessage.classList.remove('hidden');
+                console.error(error);
+            }
         };
     </script>
 </body>
 </html>
+    
