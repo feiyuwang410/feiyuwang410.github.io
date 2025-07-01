@@ -52,34 +52,25 @@
                 ];
 
                 AMap.plugin('AMap.DistrictLayer', function() {
-                    // 已访问省份 - 蓝色高亮
-                    const visitedStyle = {
-                        'fillColor': '#3B82F6', // 蓝色
-                        'fillOpacity': 0.9,
-                        'strokeColor': '#1D4ED8',
-                        'strokeWeight': 1.5
-                    };
-
-                    // 先加载已访问省份图层
-                    visitedProvinces.forEach(province => {
-                        const district = new AMap.DistrictLayer.Province({
-                            zIndex: 11, // 确保高亮图层在最上层
-                            adcode: [province.adcode],
-                            style: visitedStyle
-                        });
-                        district.setMap(map);
-                    });
-
-                    // 全国图层 - 半透明灰色，放在后面加载
+                    // 使用单个图层，通过回调函数动态设置样式
                     const nationLayer = new AMap.DistrictLayer.Country({
                         zIndex: 10,
                         adcode: '100000',
                         depth: 1,
                         style: {
-                            'fillColor': '#F0F2F5',
-                            'fillOpacity': 0.3, // 降低透明度，避免遮挡高亮
-                            'strokeColor': '#9CA3AF',
-                            'strokeWeight': 1
+                            'nation-stroke': '#9CA3AF',
+                            'coastline-stroke': '#9CA3AF',
+                            'province-stroke': '#9CA3AF',
+                            'fill': function(props) {
+                                // 根据adcode判断是否已访问
+                                const isVisited = visitedProvinces.some(p => p.adcode === props.adcode);
+                                return {
+                                    fillColor: isVisited ? '#3B82F6' : '#F0F2F5',
+                                    fillOpacity: isVisited ? 0.9 : 0.3,
+                                    strokeColor: isVisited ? '#1D4ED8' : '#9CA3AF',
+                                    strokeWeight: isVisited ? 1.5 : 1
+                                };
+                            }
                         }
                     });
                     nationLayer.setMap(map);
