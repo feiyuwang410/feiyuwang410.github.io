@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的豆瓣阅读记录</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36D399',
+                        warning: '#FFAB00',
+                        danger: '#FF5252',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .book-card {
+                @apply bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-book text-primary text-xl"></i>
+                <h1 class="text-xl font-bold text-primary">我的阅读记录</h1>
+            </div>
+            <div>
+                <button id="douban-login" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                    <i class="fa fa-douban mr-2"></i>登录豆瓣
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 container mx-auto px-4 py-8">
+        <!-- 欢迎区域 -->
+        <section id="welcome" class="mb-10 text-center py-12">
+            <div class="max-w-md mx-auto">
+                <i class="fa fa-book text-primary text-5xl mb-4"></i>
+                <h2 class="text-2xl font-bold mb-3">欢迎使用阅读记录</h2>
+                <p class="text-gray-600 mb-6">连接您的豆瓣账号，查看和管理您的阅读记录</p>
+                <button id="connect-douban" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors text-lg">
+                    <i class="fa fa-douban mr-2"></i>连接豆瓣账号
+                </button>
+            </div>
+        </section>
+
+        <!-- 书籍列表（初始隐藏） -->
+        <section id="books-section" class="hidden mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">我的书籍</h2>
+                <div class="flex space-x-3">
+                    <div class="relative">
+                        <input type="text" id="search-books" placeholder="搜索书籍..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    <select id="filter-status" class="bg-white border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <option value="all">全部</option>
+                        <option value="reading">在读</option>
+                        <option value="read">已读</option>
+                        <option value="wish">想读</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="books-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 书籍卡片将通过JavaScript动态生成 -->
+                <div class="text-center py-12 col-span-full" id="empty-state">
+                    <i class="fa fa-inbox text-gray-300 text-5xl mb-4"></i>
+                    <p class="text-gray-500">暂无书籍数据，请等待加载...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 统计卡片（初始隐藏） -->
+        <section id="stats-section" class="hidden mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">当前阅读</p>
+                            <h3 class="text-xl font-bold mt-1" id="reading-count">0 本</h3>
+                        </div>
+                        <div class="bg-primary/10 p-3 rounded-lg">
+                            <i class="fa fa-book text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">已读完</p>
+                            <h3 class="text-xl font-bold mt-1" id="read-count">0 本</h3>
+                        </div>
+                        <div class="bg-secondary/10 p-3 rounded-lg">
+                            <i class="fa fa-check-circle text-secondary"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">想读</p>
+                            <h3 class="text-xl font-bold mt-1" id="wish-count">0 本</h3>
+                        </div>
+                        <div class="bg-warning/10 p-3 rounded-lg">
+                            <i class="fa fa-star-o text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t py-4">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© 2025 我的阅读记录 | 与豆瓣读书关联</p>
+        </div>
+    </footer>
+
+    <script>
+        // 豆瓣登录按钮点击事件
+        document.getElementById('douban-login').addEventListener('click', function() {
+            // 实际项目中这里会跳转到豆瓣授权页面
+            alert('即将跳转到豆瓣授权页面（演示环境未实际连接）');
+            // 模拟登录成功，显示书籍数据
+            setTimeout(function() {
+                document.getElementById('welcome').classList.add('hidden');
+                document.getElementById('books-section').classList.remove('hidden');
+                document.getElementById('stats-section').classList.remove('hidden');
+                loadMockBooks();
+            }, 1000);
+        });
+
+        document.getElementById('connect-douban').addEventListener('click', function() {
+            document.getElementById('douban-login').click();
+        });
+
+        // 模拟从豆瓣获取书籍数据
+        function loadMockBooks() {
+            // 隐藏空状态提示
+            document.getElementById('empty-state').classList.add('hidden');
+            
+            // 模拟数据
+            const mockBooks = [
+                {
+                    id: 1,
+                    title: "人类简史：从动物到上帝",
+                    author: "尤瓦尔·赫拉利",
+                    status: "reading",
+                    progress: 65,
+                    rating: 4.8,
+                    category: "历史 / 科学",
+                    cover: "https://picsum.photos/seed/book1/400/500",
+                    startDate: "2025.05.15",
+                    endDate: ""
+                },
+                {
+                    id: 2,
+                    title: "影响力",
+                    author: "罗伯特·西奥迪尼",
+                    status: "read",
+                    progress: 100,
+                    rating: 4.7,
+                    category: "心理学",
+                    cover: "https://picsum.photos/seed/book2/400/500",
+                    startDate: "2025.03.12",
+                    endDate: "2025.04.05"
+                },
+                {
+                    id: 3,
+                    title: "思考，快与慢",
+                    author: "丹尼尔·卡尼曼",
+                    status: "read",
+                    progress: 100,
+                    rating: 4.9,
+                    category: "心理学",
+                    cover: "https://picsum.photos/seed/book3/400/500",
+                    startDate: "2025.01.05",
+                    endDate: "2025.02.20"
+                },
+                {
+                    id: 4,
+                    title: "三体",
+                    author: "刘慈欣",
+                    status: "wish",
+                    progress: 0,
+                    rating: 0,
+                    category: "科幻",
+                    cover: "https://picsum.photos/seed/book4/400/500",
+                    startDate: "",
+                    endDate: ""
+                }
+            ];
+            
+            // 更新统计数据
+            document.getElementById('reading-count').textContent = mockBooks.filter(b => b.status === 'reading').length + ' 本';
+            document.getElementById('read-count').textContent = mockBooks.filter(b => b.status === 'read').length + ' 本';
+            document.getElementById('wish-count').textContent = mockBooks.filter(b => b.status === 'wish').length + ' 本';
+            
+            // 渲染书籍卡片
+            const container = document.getElementById('books-container');
+            mockBooks.forEach(book => {
+                const card = createBookCard(book);
+                container.appendChild(card);
+            });
+        }
+
+        // 创建书籍卡片
+        function createBookCard(book) {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+            
+            let statusBadge = '';
+            let progressHtml = '';
+            let actionButton = '';
+            
+            // 根据阅读状态设置不同的样式和内容
+            if (book.status === 'reading') {
+                statusBadge = `<div class="absolute top-3 right-3 bg-primary text-white text-xs font-bold px-2 py-1 rounded">在读</div>`;
+                progressHtml = `
+                    <div class="mb-4">
+                        <p class="text-xs text-gray-500 mb-1">阅读进度</p>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="bg-primary h-1.5 rounded-full" style="width: ${book.progress}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 text-right">${book.progress}% · 剩余约 ${Math.floor((100 - book.progress) * 0.2)} 小时</p>
+                    </div>
+                `;
+                actionButton = `
+                    <button class="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                        继续阅读
+                    </button>
+                `;
+            } else if (book.status === 'read') {
+                statusBadge = `<div class="absolute top-3 right-3 bg-secondary text-white text-xs font-bold px-2 py-1 rounded">已读完</div>`;
+                progressHtml = `
+                    <div class="mb-4">
+                        <p class="text-xs text-gray-500 mb-1">阅读时间</p>
+                        <p class="text-sm font-medium">${book.startDate} - ${book.endDate}</p>
+                    </div>
+                `;
+                actionButton = `
+                    <button class="flex-1 bg-white border border-gray-200 text-dark py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        查看笔记
+                    </button>
+                `;
+            } else if (book.status === 'wish') {
+                statusBadge = `<div class="absolute top-3 right-3 bg-warning text-white text-xs font-bold px-2 py-1 rounded">想读</div>`;
+                progressHtml = `
+                    <div class="mb-4">
+                        <p class="text-xs text-gray-500 mb-1">加入想读</p>
+                        <p class="text-sm font-medium">2025.06.10</p>
+                    </div>
+                `;
+                actionButton = `
+                    <button class="flex-1 bg-white border border-primary text-primary py-2 rounded-lg hover:bg-primary/5 transition-colors">
+                        开始阅读
+                    </button>
+                `;
+            }
+            
+            // 评分显示
+            let ratingHtml = '';
+            if (book.rating > 0) {
+                ratingHtml = `
+                    <div class="flex items-center">
+                        <i class="fa fa-star text-warning text-sm"></i>
+                        <span class="ml-1 text-sm">${book.rating}</span>
+                    </div>
+                `;
+            }
+            
+            card.innerHTML = `
+                <div class="relative">
+                    <img src="${book.cover}" alt="${book.title}" class="w-full h-64 object-cover">
+                    ${statusBadge}
+                </div>
+                <div class="p-5">
+                    <h3 class="font-bold text-lg mb-1">${book.title}</h3>
+                    <p class="text-gray-500 text-sm mb-3">${book.author}</p>
+                    <div class="flex items-center justify-between mb-4">
+                        ${ratingHtml}
+                        <div class="text-xs text-gray-500">${book.category}</div>
+                    </div>
+                    ${progressHtml}
+                    <div class="flex space-x-2">
+                        ${actionButton}
+                        <button class="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fa fa-ellipsis-h text-gray-500"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // 搜索功能
+        document.getElementById('search-books').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.book-card');
+            
+            cards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const author = card.querySelector('p').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || author.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // 筛选功能
+        document.getElementById('filter-status').addEventListener('change', function(e) {
+            const status = e.target.value;
+            const cards = document.querySelectorAll('.book-card');
+            
+            cards.forEach(card => {
+                const badge = card.querySelector('.absolute');
+                let cardStatus = '';
+                
+                if (badge) {
+                    if (badge.textContent.includes('在读')) cardStatus = 'reading';
+                    else if (badge.textContent.includes('已读完')) cardStatus = 'read';
+                    else if (badge.textContent.includes('想读')) cardStatus = 'wish';
+                }
+                
+                if (status === 'all' || status === cardStatus) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
