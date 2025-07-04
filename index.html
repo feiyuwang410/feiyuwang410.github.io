@@ -1,91 +1,726 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>杭州公寓年化回报柱状图</title>
-  <!-- 引入 ECharts -->
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>杭州公寓租售比分析</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(90deg, #1a3a5f, #2c5e92);
+            color: white;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f4f8;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a3a5f;
+        }
+        
+        .card-icon {
+            background: #e3f2fd;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a73e8;
+            font-size: 1.2rem;
+        }
+        
+        .chart-container {
+            height: 350px;
+            width: 100%;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            background: white;
+            border: 2px solid #e0e6ed;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-btn:hover, .filter-btn.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        }
+        
+        .data-table th {
+            background: #1a3a5f;
+            color: white;
+            text-align: left;
+            padding: 16px 15px;
+            font-weight: 500;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background: #f8fafd;
+        }
+        
+        .data-table td {
+            padding: 14px 15px;
+            border-bottom: 1px solid #eef2f7;
+        }
+        
+        .data-table tr:hover {
+            background: #e3f2fd;
+        }
+        
+        .highlight {
+            font-weight: 600;
+            color: #1a73e8;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px 0;
+            margin-top: 40px;
+            color: #6c757d;
+            font-size: 0.95rem;
+            border-top: 1px solid #e0e6ed;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #1a73e8;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        
+        .tooltip {
+            position: absolute;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            border-radius: 6px;
+            pointer-events: none;
+            font-size: 0.9rem;
+            z-index: 100;
+            min-width: 180px;
+        }
+        
+        .tooltip h4 {
+            margin-bottom: 8px;
+            color: #64b5f6;
+            font-size: 1.05rem;
+        }
+        
+        .tooltip p {
+            margin: 4px 0;
+        }
+        
+        .tooltip .highlight {
+            color: #ffcc80;
+            font-weight: 600;
+        }
+    </style>
 </head>
-
 <body>
-  <!-- 图表容器 -->
-  <div id="main" style="width: 100%; height: 600px;"></div>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-building"></i> 杭州公寓租售比分析</h1>
+            <p class="subtitle">基于杭州核心区域公寓的房价与租金数据，可视化展示投资回报率</p>
+        </header>
+        
+        <div class="info-box">
+            <i class="fas fa-info-circle"></i> 租售比 = 年租金 / 房屋总价。该指标是衡量房产投资收益的重要参考，租售比越高代表投资回报越好。国际标准认为租售比在1:300-1:200（即年回报率4%-6%）为健康水平。
+        </div>
+        
+        <div class="filters">
+            <div class="filter-btn active" data-filter="all">全部区域</div>
+            <div class="filter-btn" data-filter="余杭">余杭区</div>
+            <div class="filter-btn" data-filter="拱墅">拱墅区</div>
+            <div class="filter-btn" data-filter="滨江">滨江区</div>
+            <div class="filter-btn" data-filter="西湖">西湖区</div>
+            <div class="filter-btn" data-filter="钱塘">钱塘区</div>
+            <div class="filter-btn" data-filter="萧山">萧山区</div>
+            <div class="filter-btn" data-filter="上城">上城区</div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">公寓年化回报率对比</h2>
+                    <div class="card-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                </div>
+                <div class="chart-container" id="bar-chart"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #1a73e8;"></div>
+                        <span>年化回报率</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">房价与租金关系</h2>
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="chart-container" id="scatter-plot"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #4caf50;"></div>
+                        <span>平均房价</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ff9800;"></div>
+                        <span>年租金</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">详细数据表格</h2>
+                <div class="card-icon">
+                    <i class="fas fa-table"></i>
+                </div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>公寓名称</th>
+                        <th>区域</th>
+                        <th>平均房价(元)</th>
+                        <th>平均月租金(元)</th>
+                        <th>年租金(元)</th>
+                        <th>年化回报率</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <footer>
+            <p>数据来源：杭州公寓租售比分析数据 | 可视化分析工具 © 2023</p>
+            <p>提示：本数据仅供参考，实际投资需考虑多方面因素</p>
+        </footer>
+    </div>
 
-  <script>
-    // 数据源 URL
-    const dataUrl = 'https://raw.githubusercontent.com/feiyuwang410/feiyuwang410.github.io/refs/heads/main/%E6%9D%AD%E5%B7%9E%E5%85%AC%E5%AF%93%E7%A7%9F%E5%94%AE%E6%AF%94.csv';
+    <script>
+        // 公寓数据
+        const apartmentData = [
+            {
+                name: "中天西城纪",
+                region: "拱墅-申花",
+                avgPrice: 543333,
+                avgRent: 2600,
+                annualReturn: 0.0479
+            },
+            {
+                name: "绿城财通中心",
+                region: "钱塘-金沙湖",
+                avgPrice: 520000,
+                avgRent: 2441,
+                annualReturn: 0.0469
+            },
+            {
+                name: "萧山宝龙广场",
+                region: "萧山-萧山新城区",
+                avgPrice: 476667,
+                avgRent: 2200,
+                annualReturn: 0.0462
+            },
+            {
+                name: "EFC",
+                region: "余杭-未来科技城",
+                avgPrice: 733333,
+                avgRent: 3200,
+                annualReturn: 0.0436
+            },
+            {
+                name: "红街天城",
+                region: "上城-杭州东站",
+                avgPrice: 523333,
+                avgRent: 2250,
+                annualReturn: 0.0430
+            },
+            {
+                name: "创客空间",
+                region: "余杭-未来科技城",
+                avgPrice: 646667,
+                avgRent: 2717,
+                annualReturn: 0.0420
+            },
+            {
+                name: "中粮方圆金街",
+                region: "拱墅-三塘",
+                avgPrice: 556667,
+                avgRent: 2333,
+                annualReturn: 0.0419
+            },
+            {
+                name: "蓝钻天成",
+                region: "拱墅-和睦",
+                avgPrice: 623333,
+                avgRent: 2517,
+                annualReturn: 0.0404
+            },
+            {
+                name: "浙港国际",
+                region: "西湖-申花",
+                avgPrice: 660000,
+                avgRent: 2633,
+                annualReturn: 0.0399
+            },
+            {
+                name: "华元十六街区",
+                region: "钱塘-高教园区西",
+                avgPrice: 426667,
+                avgRent: 1700,
+                annualReturn: 0.0398
+            },
+            {
+                name: "北大未名府",
+                region: "余杭-未来科技城",
+                avgPrice: 610000,
+                avgRent: 2367,
+                annualReturn: 0.0388
+            },
+            {
+                name: "钱江之江新天地",
+                region: "西湖-转塘",
+                avgPrice: 336667,
+                avgRent: 1297,
+                annualReturn: 0.0385
+            },
+            {
+                name: "滨江宝龙广场",
+                region: "滨江-彩虹城",
+                avgPrice: 760000,
+                avgRent: 2907,
+                annualReturn: 0.0382
+            },
+            {
+                name: "星耀城",
+                region: "滨江-区政府",
+                avgPrice: 1016667,
+                avgRent: 3717,
+                annualReturn: 0.0366
+            },
+            {
+                name: "同人精华",
+                region: "西湖-申花",
+                avgPrice: 600000,
+                avgRent: 2167,
+                annualReturn: 0.0361
+            },
+            {
+                name: "嘉润铭座",
+                region: "萧山-奥体",
+                avgPrice: 870000,
+                avgRent: 2630,
+                annualReturn: 0.0302
+            },
+            {
+                name: "西溪八方城",
+                region: "余杭-未来科技城",
+                avgPrice: 720000,
+                avgRent: 1892,
+                annualReturn: 0.0263
+            }
+        ];
 
-    // 加载数据
-    async function loadData() {
-      try {
-        const response = await fetch(dataUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // 填充表格数据
+        function populateTable(data) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                const annualRent = item.avgRent * 12;
+                const annualReturnPercent = (item.annualReturn * 100).toFixed(2) + '%';
+                
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.region}</td>
+                    <td>${item.avgPrice.toLocaleString()}</td>
+                    <td>${item.avgRent.toLocaleString()}</td>
+                    <td>${annualRent.toLocaleString()}</td>
+                    <td class="highlight">${annualReturnPercent}</td>
+                `;
+                tableBody.appendChild(row);
+            });
         }
-        const csvData = await response.text();
-        processData(csvData);
-      } catch (error) {
-        console.error('Error loading data:', error);
-      }
-    }
 
-    // 处理 CSV 数据
-    function processData(csvData) {
-      const rows = csvData.split('\n').filter(row => row.trim()!== '');
-      const headers = rows[0].split(',');
-      const apartmentData = [];
-
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i].split(',');
-        if (row.length < headers.length) continue;
-
-        const apartment = {
-          name: row[0].trim(),
-          annualReturn: parseFloat(row[5])
-        };
-
-        if (!isNaN(apartment.annualReturn)) {
-          apartmentData.push(apartment);
+        // 创建柱状图
+        function createBarChart(data) {
+            const margin = {top: 40, right: 30, bottom: 120, left: 70};
+            const width = document.getElementById('bar-chart').offsetWidth - margin.left - margin.right;
+            const height = document.getElementById('bar-chart').offsetHeight - margin.top - margin.bottom;
+            
+            d3.select("#bar-chart").selectAll("*").remove();
+            
+            const svg = d3.select("#bar-chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            // X轴
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.name))
+                .range([0, width])
+                .padding(0.2);
+            
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .attr("text-anchor", "end")
+                .attr("dx", "-0.8em")
+                .attr("dy", "0.15em");
+            
+            // Y轴
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.annualReturn) * 1.1])
+                .range([height, 0]);
+            
+            svg.append("g")
+                .call(d3.axisLeft(y).tickFormat(d => (d * 100).toFixed(1) + "%"));
+            
+            // 添加Y轴标签
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("年化回报率");
+            
+            // 添加标题
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 0 - (margin.top / 2))
+                .attr("text-anchor", "middle")
+                .style("font-size", "18px")
+                .style("font-weight", "bold")
+                .text("杭州公寓年化回报率对比");
+            
+            // 创建柱状
+            svg.selectAll("bar")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("x", d => x(d.name))
+                .attr("y", d => y(d.annualReturn))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - y(d.annualReturn))
+                .attr("fill", "#1a73e8")
+                .on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr("fill", "#0d47a1");
+                    
+                    tooltip
+                        .html(`
+                            <h4>${d.name}</h4>
+                            <p>区域：${d.region}</p>
+                            <p>平均房价：<span class="highlight">${d.avgPrice.toLocaleString()}</span> 元</p>
+                            <p>平均月租金：<span class="highlight">${d.avgRent.toLocaleString()}</span> 元</p>
+                            <p>年化回报率：<span class="highlight">${(d.annualReturn * 100).toFixed(2)}%</span></p>
+                        `)
+                        .style("opacity", 1);
+                })
+                .on("mouseout", function() {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr("fill", "#1a73e8");
+                    
+                    tooltip.style("opacity", 0);
+                });
+            
+            // 添加工具提示
+            const tooltip = d3.select("body")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
         }
-      }
 
-      renderChart(apartmentData);
-    }
+        // 创建散点图
+        function createScatterPlot(data) {
+            const margin = {top: 40, right: 60, bottom: 70, left: 70};
+            const width = document.getElementById('scatter-plot').offsetWidth - margin.left - margin.right;
+            const height = document.getElementById('scatter-plot').offsetHeight - margin.top - margin.bottom;
+            
+            d3.select("#scatter-plot").selectAll("*").remove();
+            
+            const svg = d3.select("#scatter-plot")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            // X轴（房价）
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.avgPrice) * 1.1])
+                .range([0, width]);
+            
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d => (d/10000).toFixed(0) + "万"))
+                .append("text")
+                .attr("x", width / 2)
+                .attr("y", 40)
+                .attr("text-anchor", "middle")
+                .text("平均房价 (元)");
+            
+            // Y轴（年租金）
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.avgRent * 12) * 1.1])
+                .range([height, 0]);
+            
+            svg.append("g")
+                .call(d3.axisLeft(y).tickFormat(d => (d/10000).toFixed(1) + "万"))
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -50)
+                .attr("x", -height / 2)
+                .attr("text-anchor", "middle")
+                .text("年租金 (元)");
+            
+            // 添加标题
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 0 - (margin.top / 2))
+                .attr("text-anchor", "middle")
+                .style("font-size", "18px")
+                .style("font-weight", "bold")
+                .text("公寓房价与租金关系分析");
+            
+            // 添加回归线
+            const regression = d3.regressionLinear()
+                .x(d => d.avgPrice)
+                .y(d => d.avgRent * 12)
+                .domain([0, d3.max(data, d => d.avgPrice)]);
+            
+            const regressionData = regression(data);
+            
+            svg.append("path")
+                .datum(regressionData)
+                .attr("fill", "none")
+                .attr("stroke", "#f44336")
+                .attr("stroke-width", 2)
+                .attr("d", d3.line()
+                    .x(d => x(d[0]))
+                    .y(d => y(d[1]))
+                );
+            
+            // 创建散点
+            svg.selectAll("dot")
+                .data(data)
+                .enter()
+                .append("circle")
+                .attr("cx", d => x(d.avgPrice))
+                .attr("cy", d => y(d.avgRent * 12))
+                .attr("r", 8)
+                .attr("fill", "#4caf50")
+                .on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr("r", 12)
+                        .attr("fill", "#ff9800");
+                    
+                    tooltip
+                        .html(`
+                            <h4>${d.name}</h4>
+                            <p>区域：${d.region}</p>
+                            <p>平均房价：<span class="highlight">${d.avgPrice.toLocaleString()}</span> 元</p>
+                            <p>年租金：<span class="highlight">${(d.avgRent * 12).toLocaleString()}</span> 元</p>
+                            <p>租售比：1:<span class="highlight">${Math.round(d.avgPrice/(d.avgRent * 12))}</span></p>
+                        `)
+                        .style("opacity", 1);
+                })
+                .on("mouseout", function() {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr("r", 8)
+                        .attr("fill", "#4caf50");
+                    
+                    tooltip.style("opacity", 0);
+                });
+            
+            // 添加工具提示
+            const tooltip = d3.select("body")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+            
+            // 添加回归线说明
+            svg.append("text")
+                .attr("x", width - 20)
+                .attr("y", y(regressionData[1][1]) - 10)
+                .attr("text-anchor", "end")
+                .text("趋势线")
+                .style("font-size", "12px")
+                .style("fill", "#f44336");
+        }
 
-    // 渲染图表
-    function renderChart(data) {
-      const chartDom = document.getElementById('main');
-      const myChart = echarts.init(chartDom);
+        // 初始化页面
+        function initPage() {
+            populateTable(apartmentData);
+            createBarChart(apartmentData);
+            createScatterPlot(apartmentData);
+            
+            // 添加区域筛选功能
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const filter = this.getAttribute('data-filter');
+                    let filteredData = apartmentData;
+                    
+                    if (filter !== 'all') {
+                        filteredData = apartmentData.filter(item => item.region.includes(filter));
+                    }
+                    
+                    populateTable(filteredData);
+                    createBarChart(filteredData);
+                    createScatterPlot(filteredData);
+                });
+            });
+        }
 
-      const names = data.map(item => item.name);
-      const returns = data.map(item => item.annualReturn);
-
-      const option = {
-        xAxis: {
-          type: 'category',
-          data: names
-        },
-        yAxis: {
-          type: 'value',
-          name: '年化回报率(%)'
-        },
-        series: [{
-          data: returns,
-          type: 'bar',
-          itemStyle: {
-            color: 'skyblue'
-          }
-        }]
-      };
-
-      myChart.setOption(option);
-    }
-
-    // 页面加载完成后加载数据
-    window.onload = loadData;
-  </script>
+        // 页面加载完成后初始化
+        window.addEventListener('load', initPage);
+        window.addEventListener('resize', function() {
+            createBarChart(apartmentData);
+            createScatterPlot(apartmentData);
+        });
+    </script>
 </body>
-
 </html>
