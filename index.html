@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>杭州公寓租售比分析</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- 添加回归分析所需的扩展库 -->
+    <script src="https://cdn.jsdelivr.net/npm/d3-regression@1.3.6/dist/d3-regression.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -289,6 +291,10 @@
                         <div class="legend-color" style="background-color: #ff9800;"></div>
                         <span>年租金</span>
                     </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f44336;"></div>
+                        <span>趋势线</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -472,8 +478,9 @@
         // 创建柱状图
         function createBarChart(data) {
             const margin = {top: 40, right: 30, bottom: 120, left: 70};
-            const width = document.getElementById('bar-chart').offsetWidth - margin.left - margin.right;
-            const height = document.getElementById('bar-chart').offsetHeight - margin.top - margin.bottom;
+            const container = document.getElementById('bar-chart');
+            const width = container.offsetWidth - margin.left - margin.right;
+            const height = container.offsetHeight - margin.top - margin.bottom;
             
             d3.select("#bar-chart").selectAll("*").remove();
             
@@ -570,8 +577,9 @@
         // 创建散点图
         function createScatterPlot(data) {
             const margin = {top: 40, right: 60, bottom: 70, left: 70};
-            const width = document.getElementById('scatter-plot').offsetWidth - margin.left - margin.right;
-            const height = document.getElementById('scatter-plot').offsetHeight - margin.top - margin.bottom;
+            const container = document.getElementById('scatter-plot');
+            const width = container.offsetWidth - margin.left - margin.right;
+            const height = container.offsetHeight - margin.top - margin.bottom;
             
             d3.select("#scatter-plot").selectAll("*").remove();
             
@@ -581,6 +589,16 @@
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            // 如果没有数据，直接返回
+            if (data.length === 0) {
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height / 2)
+                    .attr("text-anchor", "middle")
+                    .text("所选区域无数据");
+                return;
+            }
             
             // X轴（房价）
             const x = d3.scaleLinear()
@@ -619,23 +637,35 @@
                 .style("font-weight", "bold")
                 .text("公寓房价与租金关系分析");
             
-            // 添加回归线
-            const regression = d3.regressionLinear()
-                .x(d => d.avgPrice)
-                .y(d => d.avgRent * 12)
-                .domain([0, d3.max(data, d => d.avgPrice)]);
-            
-            const regressionData = regression(data);
-            
-            svg.append("path")
-                .datum(regressionData)
-                .attr("fill", "none")
-                .attr("stroke", "#f44336")
-                .attr("stroke-width", 2)
-                .attr("d", d3.line()
-                    .x(d => x(d[0]))
-                    .y(d => y(d[1]))
-                );
+            // 检查d3.regressionLinear是否可用
+            if (typeof d3.regressionLinear === 'function') {
+                // 添加回归线
+                const regression = d3.regressionLinear()
+                    .x(d => d.avgPrice)
+                    .y(d => d.avgRent * 12)
+                    .domain([0, d3.max(data, d => d.avgPrice)]);
+                
+                const regressionData = regression(data);
+                
+                svg.append("path")
+                    .datum(regressionData)
+                    .attr("fill", "none")
+                    .attr("stroke", "#f44336")
+                    .attr("stroke-width", 2)
+                    .attr("d", d3.line()
+                        .x(d => x(d[0]))
+                        .y(d => y(d[1]))
+                    );
+                
+                // 添加回归线说明
+                svg.append("text")
+                    .attr("x", width - 20)
+                    .attr("y", y(regressionData[1][1]) - 10)
+                    .attr("text-anchor", "end")
+                    .text("趋势线")
+                    .style("font-size", "12px")
+                    .style("fill", "#f44336");
+            }
             
             // 创建散点
             svg.selectAll("dot")
@@ -678,15 +708,6 @@
                 .append("div")
                 .attr("class", "tooltip")
                 .style("opacity", 0);
-            
-            // 添加回归线说明
-            svg.append("text")
-                .attr("x", width - 20)
-                .attr("y", y(regressionData[1][1]) - 10)
-                .attr("text-anchor", "end")
-                .text("趋势线")
-                .style("font-size", "12px")
-                .style("fill", "#f44336");
         }
 
         // 初始化页面
